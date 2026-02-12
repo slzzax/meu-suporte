@@ -8,7 +8,6 @@ const firebaseConfig = {
     messagingSenderId: "491968501139",
     appId: "1:491968501139:web:da63c20e1651fad1f30466"
 };
-
 // Inicialização
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
@@ -166,5 +165,6 @@ function mostrarRamais() {
         addMsg(lista, "bot");
     }, 500);
 }
+
 
 document.getElementById("userInput").addEventListener("keyup", (e) => { if (e.key === "Enter") sendMessage(); });
