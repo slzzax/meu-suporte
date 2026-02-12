@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Suporte do Suporte | Escola</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+</head>
+<body>
+
+    <div id="login-screen" class="overlay">
+        <div class="login-box">
+            <div class="icon-header">🔐</div>
+            <h2>Acesso Técnico</h2>
+            <input type="text" id="username" placeholder="Usuário">
+            <input type="password" id="password" placeholder="Senha (mínimo 6 dígitos)">
+            <button onclick="handleLogin()">Entrar / Registrar</button>
+        </div>
+    </div>
+
+    <div class="main-layout" id="main-app" style="display:none;">
+        <aside class="sidebar">
+            <div class="profile-card">
+                <div class="avatar">👤</div>
+                <div class="profile-info">
+                    <span id="display-name">Técnico</span>
+                    <div class="status-badge"><span class="dot"></span> Online</div>
+                </div>
+                <button class="logout-btn" onclick="logout()">Sair</button>
+            </div>
+
+            <div id="online-users-container" style="padding: 10px; color: white; font-size: 12px; background: rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 20px;">
+                <p style="margin-bottom: 10px; font-weight: 600; color: #3b82f6;">TÉCNICOS ATIVOS:</p>
+                <div id="users-list"></div>
+            </div>
+            
+            <nav class="nav-menu">
+                <p class="nav-title">PROTOCOLOS RÁPIDOS</p>
+                <button onclick="autoReply('impressora')">🖨️ Impressoras / IP</button>
+                <button onclick="autoReply('internet')">🌐 Rede e Wi-Fi</button>
+                <button onclick="autoReply('projetor')">📽️ Projetores / HDMI</button>
+                <button onclick="autoReply('tablet')">📱 Tablets Escolares</button>
+                <button onclick="autoReply('som')">🔊 Som e Áudio</button>
+                <button onclick="autoReply('google')">📧 Google Workspace</button>
+                <button onclick="mostrarRamais()" style="border: 1px solid #25d366; margin-top: 10px;">☎️ Ramais</button>
+            </nav>
+
+            <a href="https://wa.me/5521993246997" class="dev-link-sidebar" target="_blank">Desenvolvedor 🟢</a>
+        </aside>
+
+        <main class="chat-area">
+            <header class="mobile-header">
+                <div class="user-info-mobile">
+                    <div class="mini-avatar">👤</div>
+                    <span id="mobile-user-name">Técnico</span>
+                </div>
+                <button class="menu-dots" onclick="toggleMenu()">⋮</button>
+            </header>
+
+            <header class="chat-header pc-header">
+                <h3>💬 Central de Respostas</h3>
+            </header>
+            
+            <div class="chat-window" id="chatWindow"></div>
+
+            <div class="input-container">
+                <input type="text" id="userInput" placeholder="Digite sua dúvida ou alternativa...">
+                <button class="send-btn" onclick="sendMessage()">Enviar</button>
+            </div>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
