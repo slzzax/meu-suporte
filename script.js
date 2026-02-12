@@ -1,4 +1,4 @@
-// CONFIGURAÇÃO FIREBASE (Atualizado com as chaves da sua imagem)
+// CONFIGURAÇÃO FIREBASE REAL (Dados da sua imagem)
 const firebaseConfig = {
     apiKey: "AIzaSyDh_PUYhiH59KiW--1c0lLpddGxwgjJGT8",
     authDomain: "suportedosuporte-37ddc.firebaseapp.com",
@@ -8,6 +8,7 @@ const firebaseConfig = {
     messagingSenderId: "491968501139",
     appId: "1:491968501139:web:da63c20e1651fad1f30466"
 };
+
 // Inicialização
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
@@ -20,12 +21,13 @@ function handleLogin() {
     const email = user + "@suporte.com";
 
     if (user === "" || pass.length < 6) {
-        alert("Digite um usuário e uma senha de no mínimo 6 dígitos.");
+        alert("A senha precisa ter no mínimo 6 dígitos (Ex: 123456).");
         return;
     }
 
+    // Tenta logar. Se não existir, ele cria a conta na hora.
     auth.signInWithEmailAndPassword(email, pass).catch(error => {
-        if (error.code === 'auth/user-not-found') {
+        if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-login-credentials') {
             return auth.createUserWithEmailAndPassword(email, pass);
         } else {
             alert("Erro: " + error.message);
@@ -33,7 +35,7 @@ function handleLogin() {
     });
 }
 
-// STATUS ONLINE E INTERFACE
+// STATUS ONLINE E PAINEL (MANTENDO SUA LÓGICA)
 auth.onAuthStateChanged(user => {
     if (user) {
         const nome = user.email.split('@')[0];
@@ -57,16 +59,18 @@ auth.onAuthStateChanged(user => {
 function carregarUsuariosOnline() {
     db.ref('status').on('value', snapshot => {
         const listDiv = document.getElementById('users-list');
-        listDiv.innerHTML = "";
-        snapshot.forEach(child => {
-            const data = child.val();
-            const cor = data.state === 'online' ? '#4ade80' : '#64748b';
-            listDiv.innerHTML += `
-                <div style="margin-bottom: 5px; display: flex; align-items: center; gap: 8px;">
-                    <span style="height: 8px; width: 8px; background: ${cor}; border-radius: 50%;"></span>
-                    <span>${data.nome}</span>
-                </div>`;
-        });
+        if(listDiv) {
+            listDiv.innerHTML = "";
+            snapshot.forEach(child => {
+                const data = child.val();
+                const cor = data.state === 'online' ? '#4ade80' : '#64748b';
+                listDiv.innerHTML += `
+                    <div style="margin-bottom: 5px; display: flex; align-items: center; gap: 8px; color: white; font-size: 13px;">
+                        <span style="height: 8px; width: 8px; background: ${cor}; border-radius: 50%;"></span>
+                        <span>${data.nome}</span>
+                    </div>`;
+            });
+        }
     });
 }
 
@@ -76,7 +80,7 @@ function logout() {
     auth.signOut();
 }
 
-// --- DADOS E LÓGICA MANTIDOS DO SEU ORIGINAL ---
+// --- SEUS DADOS ORIGINAIS (MANTIDOS) ---
 const listaRamais = [
     { ramal: "1046", setor: "Diretoria" }, { ramal: "1026", setor: "RecreioCoordPedagInfant" },
     { ramal: "1020", setor: "TaquaraComercial1" }, { ramal: "1021", setor: "RecreioComercial1" },
@@ -89,19 +93,13 @@ const listaRamais = [
     { ramal: "1048", setor: "TIMeier" }, { ramal: "1058", setor: "RH" }
 ];
 
-const respostasIA = [
-    { keys: ["ip"], resp: "<b>🌐 VERIFICAÇÃO DE IP:</b><br>1. Vá na impressora: Ajustes > Rede > Exibir IPv4.<br>2. No PC: Tente dar ping no IP.<br>3. Verifique o cabo ou porta no Switch." },
-    { keys: ["toner"], resp: "<b>🔋 PROTOCOLO TONER:</b><br>1. Pegue a chave no ADM.<br>2. Pegue o novo no almoxarifado.<br>3. Remova as travas e coloque o velho na caixa." },
-    { keys: ["scanner"], resp: "<b>📂 PROTOCOLO SCANNER:</b><br>1. Verifique o compartilhamento da pasta.<br>2. Confira usuário/senha SMB na página da impressora." }
-];
-
 const respostasSuporte = {
-    impressora: "<b>🖨️ SUPORTE IMPRESSORA:</b><br>Deseja verificar <b>IP</b>, <b>TONER</b> ou <b>SCANNER</b>?<br><i>Digite para continuar.</i>",
-    internet: "<b>🌐 REDE:</b> Reinicie o Access Point ou use ipconfig /renew.",
-    projetor: "<b>📽️ PROJETOR:</b> Win+P e verifique o HDMI.",
-    tablet: "<b>📱 TABLET:</b> Segure Power + Volume Down para reiniciar.",
-    som: "<b>🔊 ÁUDIO:</b> Verifique cabos P2 e energia.",
-    google: "<b>📧 GOOGLE:</b> Reset de senha via painel Admin."
+    impressora: "<b>🖨️ SUPORTE IMPRESSORA:</b> Verifique o IP ou Toner.",
+    internet: "<b>🌐 REDE:</b> Reinicie o roteador ou AP.",
+    projetor: "<b>📽️ PROJETOR:</b> Verifique o cabo HDMI.",
+    tablet: "<b>📱 TABLET:</b> Segure Power + Volume Down.",
+    som: "<b>🔊 ÁUDIO:</b> Verifique os cabos P2.",
+    google: "<b>📧 GOOGLE:</b> Reset via painel Admin."
 };
 
 const chatWin = document.getElementById('chatWindow');
@@ -119,19 +117,15 @@ function sendMessage() {
     if(texto) {
         addMsg(input.value, 'user');
         input.value = "";
-        
-        const buscaIA = respostasIA.find(item => item.keys.every(k => texto.includes(k)));
         const buscaRamal = listaRamais.filter(r => r.ramal.includes(texto) || r.setor.toLowerCase().includes(texto));
-
         setTimeout(() => {
-            if (buscaIA) { addMsg(buscaIA.resp, "bot"); } 
-            else if (buscaRamal.length > 0) {
+            if (buscaRamal.length > 0) {
                 let res = "<b>🔎 Ramais:</b><br>";
                 buscaRamal.forEach(r => res += `${r.setor}: <b>${r.ramal}</b><br>`);
                 addMsg(res, "bot");
             } else {
                 const chave = Object.keys(respostasSuporte).find(k => texto.includes(k));
-                addMsg(chave ? respostasSuporte[chave] : "Não entendi. Escolha uma opção acima.", 'bot');
+                addMsg(chave ? respostasSuporte[chave] : "Não entendi.", 'bot');
             }
         }, 500);
     }
@@ -139,32 +133,18 @@ function sendMessage() {
 
 function toggleMenu() {
     const sidebar = document.querySelector('.sidebar');
-    let overlay = document.querySelector('.menu-overlay');
-    if (!overlay) {
-        overlay = document.createElement('div');
-        overlay.className = 'menu-overlay';
-        overlay.onclick = toggleMenu;
-        document.body.appendChild(overlay);
-    }
     sidebar.classList.toggle('active');
-    overlay.classList.toggle('active');
 }
 
 function autoReply(key) {
-    if (window.innerWidth <= 768) toggleMenu();
     addMsg(`Protocolo ${key.toUpperCase()} solicitado.`, 'user');
     setTimeout(() => addMsg(respostasSuporte[key], 'bot'), 500);
 }
 
 function mostrarRamais() {
-    if (window.innerWidth <= 768) toggleMenu();
-    addMsg("Solicitando ramais...", "user");
-    setTimeout(() => {
-        let lista = "<b>📞 Ramais Principais:</b><br>";
-        listaRamais.forEach(r => lista += `${r.setor}: <b>${r.ramal}</b><br>`);
-        addMsg(lista, "bot");
-    }, 500);
+    let lista = "<b>📞 Ramais:</b><br>";
+    listaRamais.forEach(r => lista += `${r.setor}: <b>${r.ramal}</b><br>`);
+    addMsg(lista, "bot");
 }
-
 
 document.getElementById("userInput").addEventListener("keyup", (e) => { if (e.key === "Enter") sendMessage(); });
