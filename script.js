@@ -1,4 +1,3 @@
-// CONFIGURAÇÃO FIREBASE REAL (Dados da sua imagem)
 const firebaseConfig = {
     apiKey: "AIzaSyDh_PUYhiH59KiW--1c0lLpddGxwgjJGT8",
     authDomain: "suportedosuporte-37ddc.firebaseapp.com",
@@ -9,47 +8,33 @@ const firebaseConfig = {
     appId: "1:491968501139:web:da63c20e1651fad1f30466"
 };
 
-// Inicialização
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
-// LOGIN E REGISTRO AUTOMÁTICO
 function handleLogin() {
     const user = document.getElementById('username').value.trim();
     const pass = document.getElementById('password').value;
+    if (!user || pass.length < 6) return alert("Preencha o usuário e senha (mín. 6 dígitos)");
+    
     const email = user + "@suporte.com";
-
-    if (user === "" || pass.length < 6) {
-        alert("A senha precisa ter no mínimo 6 dígitos (Ex: 123456).");
-        return;
-    }
-
-    // Tenta logar. Se não existir, ele cria a conta na hora.
-    auth.signInWithEmailAndPassword(email, pass).catch(error => {
-        if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-login-credentials') {
-            return auth.createUserWithEmailAndPassword(email, pass);
-        } else {
-            alert("Erro: " + error.message);
-        }
+    auth.signInWithEmailAndPassword(email, pass).catch(() => {
+        return auth.createUserWithEmailAndPassword(email, pass);
     });
 }
 
-// STATUS ONLINE E PAINEL (MANTENDO SUA LÓGICA)
 auth.onAuthStateChanged(user => {
     if (user) {
         const nome = user.email.split('@')[0];
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('main-app').style.display = 'flex';
         document.getElementById('display-name').innerText = nome;
-        if(document.getElementById('mobile-user-name')) document.getElementById('mobile-user-name').innerText = nome;
+        document.getElementById('mobile-user-name').innerText = nome;
         
-        const myStatusRef = db.ref('status/' + user.uid);
-        myStatusRef.set({ nome: nome, state: 'online' });
-        myStatusRef.onDisconnect().set({ nome: nome, state: 'offline' });
-
-        addMsg(`Conectado como <b>${nome}</b>.`, 'bot');
+        db.ref('status/' + user.uid).set({ nome: nome, state: 'online' });
+        db.ref('status/' + user.uid).onDisconnect().set({ nome: nome, state: 'offline' });
         carregarUsuariosOnline();
+        addMsg(`Olá <b>${nome}</b>, como posso ajudar hoje?`, 'bot');
     } else {
         document.getElementById('login-screen').style.display = 'flex';
         document.getElementById('main-app').style.display = 'none';
@@ -58,29 +43,18 @@ auth.onAuthStateChanged(user => {
 
 function carregarUsuariosOnline() {
     db.ref('status').on('value', snapshot => {
-        const listDiv = document.getElementById('users-list');
-        if(listDiv) {
-            listDiv.innerHTML = "";
-            snapshot.forEach(child => {
-                const data = child.val();
-                const cor = data.state === 'online' ? '#4ade80' : '#64748b';
-                listDiv.innerHTML += `
-                    <div style="margin-bottom: 5px; display: flex; align-items: center; gap: 8px; color: white; font-size: 13px;">
-                        <span style="height: 8px; width: 8px; background: ${cor}; border-radius: 50%;"></span>
-                        <span>${data.nome}</span>
-                    </div>`;
-            });
-        }
+        const list = document.getElementById('users-list');
+        list.innerHTML = "";
+        snapshot.forEach(child => {
+            const data = child.val();
+            if (data.state === 'online') {
+                list.innerHTML += `<div style="display:flex; align-items:center; gap:5px; margin-bottom:4px;">
+                    <span class="dot"></span> ${data.nome}</div>`;
+            }
+        });
     });
 }
 
-function logout() {
-    const user = auth.currentUser;
-    if (user) db.ref('status/' + user.uid).set({ nome: user.email.split('@')[0], state: 'offline' });
-    auth.signOut();
-}
-
-// --- SEUS DADOS ORIGINAIS (MANTIDOS) ---
 const listaRamais = [
     { ramal: "1046", setor: "Diretoria" }, { ramal: "1026", setor: "RecreioCoordPedagInfant" },
     { ramal: "1020", setor: "TaquaraComercial1" }, { ramal: "1021", setor: "RecreioComercial1" },
@@ -102,49 +76,56 @@ const respostasSuporte = {
     google: "<b>📧 GOOGLE:</b> Reset via painel Admin."
 };
 
-const chatWin = document.getElementById('chatWindow');
 function addMsg(content, type) {
+    const win = document.getElementById('chatWindow');
     const div = document.createElement('div');
     div.className = `msg ${type}`;
     div.innerHTML = content;
-    chatWin.appendChild(div);
-    chatWin.scrollTop = chatWin.scrollHeight;
+    win.appendChild(div);
+    win.scrollTop = win.scrollHeight;
 }
 
 function sendMessage() {
     const input = document.getElementById('userInput');
     const texto = input.value.toLowerCase().trim();
-    if(texto) {
-        addMsg(input.value, 'user');
-        input.value = "";
+    if (!texto) return;
+
+    addMsg(input.value, 'user');
+    input.value = "";
+
+    setTimeout(() => {
         const buscaRamal = listaRamais.filter(r => r.ramal.includes(texto) || r.setor.toLowerCase().includes(texto));
-        setTimeout(() => {
-            if (buscaRamal.length > 0) {
-                let res = "<b>🔎 Ramais:</b><br>";
-                buscaRamal.forEach(r => res += `${r.setor}: <b>${r.ramal}</b><br>`);
-                addMsg(res, "bot");
-            } else {
-                const chave = Object.keys(respostasSuporte).find(k => texto.includes(k));
-                addMsg(chave ? respostasSuporte[chave] : "Não entendi.", 'bot');
-            }
-        }, 500);
-    }
+        if (buscaRamal.length > 0) {
+            let res = "<b>🔎 Ramais encontrados:</b><br>";
+            buscaRamal.forEach(r => res += `${r.setor}: <b>${r.ramal}</b><br>`);
+            addMsg(res, "bot");
+        } else {
+            const chave = Object.keys(respostasSuporte).find(k => texto.includes(k));
+            addMsg(chave ? respostasSuporte[chave] : "Não encontrei uma resposta exata. Tente termos como 'internet', 'impressora' ou o nome do setor.", 'bot');
+        }
+    }, 500);
 }
 
 function toggleMenu() {
-    const sidebar = document.querySelector('.sidebar');
-    sidebar.classList.toggle('active');
+    document.getElementById('sidebar').classList.toggle('active');
+    document.getElementById('menuOverlay').classList.toggle('active');
 }
 
 function autoReply(key) {
-    addMsg(`Protocolo ${key.toUpperCase()} solicitado.`, 'user');
-    setTimeout(() => addMsg(respostasSuporte[key], 'bot'), 500);
+    if (window.innerWidth <= 768) toggleMenu();
+    addMsg(`Solicitando suporte para: ${key.toUpperCase()}`, 'user');
+    setTimeout(() => addMsg(respostasSuporte[key], 'bot'), 600);
 }
 
 function mostrarRamais() {
-    let lista = "<b>📞 Ramais:</b><br>";
+    if (window.innerWidth <= 768) toggleMenu();
+    let lista = "<b>📞 Lista Completa de Ramais:</b><br>";
     listaRamais.forEach(r => lista += `${r.setor}: <b>${r.ramal}</b><br>`);
     addMsg(lista, "bot");
+}
+
+function logout() {
+    auth.signOut();
 }
 
 document.getElementById("userInput").addEventListener("keyup", (e) => { if (e.key === "Enter") sendMessage(); });
